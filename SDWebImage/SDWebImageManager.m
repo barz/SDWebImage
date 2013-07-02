@@ -134,7 +134,16 @@
             {                
                 if (weakOperation.cancelled)
                 {
-                    completedBlock(nil, nil, SDImageCacheTypeNone, finished);
+                    // Hsoi 2013-07-02 - The original author had it such if the weakOperation was cancelled, the
+                    // completedBlock() is called passing nil for the image, nil for the error, cache type of
+                    // 'none' and the finished is whatever was passed in. WELL... the thing is, we do want to
+                    // detect if there's a cancel (in our client/calling code). Because it's very possible to have
+                    // this same invocation of the completedBlock with those values in the normal course of action.
+                    // So it's insufficient to just pass these and case for it.
+                    //
+                    // So since we know this is a cancel, we'll pass along that we cancelled.
+                    NSError* cancelError = [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorCancelled userInfo:nil];
+                    completedBlock(nil, cancelError, SDImageCacheTypeNone, finished);
                 }
                 else if (error)
                 {
