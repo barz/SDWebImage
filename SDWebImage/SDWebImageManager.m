@@ -14,6 +14,7 @@
 
 @property (assign, nonatomic, getter = isCancelled) BOOL cancelled;
 @property (copy, nonatomic) void (^cancelBlock)();
+@property (strong, nonatomic) NSOperation *cacheOperation;
 
 @end
 
@@ -67,6 +68,9 @@
 
 - (id<SDWebImageOperation>)downloadWithURL:(NSURL *)url options:(SDWebImageOptions)options progress:(SDWebImageDownloaderProgressBlock)progressBlock completed:(SDWebImageCompletedWithFinishedBlock)completedBlock
 {    
+    // Invoking this method without a completedBlock is pointless
+    NSParameterAssert(completedBlock);
+    
     // Very common mistake is to send the URL using NSString object instead of NSURL. For some strange reason, XCode won't
     // throw any warning for this type mismatch. Here we failsafe this error by allowing URLs to be passed as NSString.
     if ([url isKindOfClass:NSString.class])
@@ -89,13 +93,13 @@
         isFailedUrl = [self.failedURLs containsObject:url];
     }
 
-    if (!url || !completedBlock || (!(options & SDWebImageRetryFailed) && isFailedUrl))
+    if (!url || (!(options & SDWebImageRetryFailed) && isFailedUrl))
     {
-        if (completedBlock)
+        dispatch_main_sync_safe(^
         {
-            NSError *error = [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorFileDoesNotExist userInfo:nil];
-            completedBlock(nil, error, SDImageCacheTypeNone, YES);
-        }
+                NSError *error = [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorFileDoesNotExist userInfo:nil];
+                completedBlock(nil, error, SDImageCacheTypeNone, YES);
+        });
         return operation;
     }
 
@@ -105,17 +109,28 @@
     }
     NSString *key = [self cacheKeyForURL:url];
 
-    [self.imageCache queryDiskCacheForKey:key done:^(UIImage *image, SDImageCacheType cacheType)
+    operation.cacheOperation = [self.imageCache queryDiskCacheForKey:key done:^(UIImage *image, SDImageCacheType cacheType)
     {
-        if (operation.isCancelled) return;
+        if (operation.isCancelled)
+        {
+            @synchronized(self.runningOperations)
+            {
+                [self.runningOperations removeObject:operation];
+            }
+
+            return;
+        }
 
         if ((!image || options & SDWebImageRefreshCached) && (![self.delegate respondsToSelector:@selector(imageManager:shouldDownloadImageForURL:)] || [self.delegate imageManager:self shouldDownloadImageForURL:url]))
         {
             if (image && options & SDWebImageRefreshCached)
             {
-                // If image was found in the cache bug SDWebImageRefreshCached is provided, notify about the cached image
-                // AND try to re-download it in order to let a chance to NSURLCache to refresh it from server.
-                completedBlock(image, nil, cacheType, YES);
+                dispatch_main_sync_safe(^
+                {
+                    // If image was found in the cache bug SDWebImageRefreshCached is provided, notify about the cached image
+                    // AND try to re-download it in order to let a chance to NSURLCache to refresh it from server.
+                    completedBlock(image, nil, cacheType, YES);
+                });
             }
 
             // download if no image or requested to refresh anyway, and download allowed by delegate
@@ -130,9 +145,9 @@
                 // ignore image read from NSURLCache if image if cached but force refreshing
                 downloaderOptions |= SDWebImageDownloaderIgnoreCachedResponse;
             }
-            __block id<SDWebImageOperation> subOperation = [self.imageDownloader downloadImageWithURL:url options:downloaderOptions progress:progressBlock completed:^(UIImage *downloadedImage, NSData *data, NSError *error, BOOL finished)
+            id<SDWebImageOperation> subOperation = [self.imageDownloader downloadImageWithURL:url options:downloaderOptions progress:progressBlock completed:^(UIImage *downloadedImage, NSData *data, NSError *error, BOOL finished)
             {                
-                if (weakOperation.cancelled)
+                if (weakOperation.isCancelled)
                 {
                     // Hsoi 2013-07-02 - The original author had it such if the weakOperation was cancelled, the
                     // completedBlock() is called passing nil for the image, nil for the error, cache type of
@@ -142,12 +157,17 @@
                     // So it's insufficient to just pass these and case for it.
                     //
                     // So since we know this is a cancel, we'll pass along that we cancelled.
-                    NSError* cancelError = [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorCancelled userInfo:nil];
-                    completedBlock(nil, cancelError, SDImageCacheTypeNone, finished);
+                    dispatch_main_sync_safe(^{
+                        NSError* cancelError = [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorCancelled userInfo:nil];
+                        completedBlock(nil, cancelError, SDImageCacheTypeNone, finished);
+                    });
                 }
                 else if (error)
                 {
-                    completedBlock(nil, error, SDImageCacheTypeNone, finished);
+                    dispatch_main_sync_safe(^
+                    {
+                        completedBlock(nil, error, SDImageCacheTypeNone, finished);
+                    });
 
                     if (error.code != NSURLErrorNotConnectedToInternet)
                     {
@@ -172,7 +192,7 @@
                         {
                             UIImage *transformedImage = [self.delegate imageManager:self transformDownloadedImage:downloadedImage withURL:url];
 
-                            dispatch_async(dispatch_get_main_queue(), ^
+                            dispatch_main_sync_safe(^
                             {
                                 completedBlock(transformedImage, nil, SDImageCacheTypeNone, finished);
                             });
@@ -186,7 +206,10 @@
                     }
                     else
                     {
-                        completedBlock(downloadedImage, nil, SDImageCacheTypeNone, finished);
+                        dispatch_main_sync_safe(^
+                        {
+                            completedBlock(downloadedImage, nil, SDImageCacheTypeNone, finished);
+                        });
 
                         if (downloadedImage && finished)
                         {
@@ -207,7 +230,10 @@
         }
         else if (image)
         {
-            completedBlock(image, nil, cacheType, YES);
+            dispatch_main_sync_safe(^
+            {
+                completedBlock(image, nil, cacheType, YES);
+            });
             @synchronized(self.runningOperations)
             {
                 [self.runningOperations removeObject:operation];
@@ -216,7 +242,10 @@
         else
         {
             // Image not in cache and download disallowed by delegate
-            completedBlock(nil, nil, SDImageCacheTypeNone, YES);
+            dispatch_main_sync_safe(^
+            {
+                completedBlock(nil, nil, SDImageCacheTypeNone, YES);
+            });
             @synchronized(self.runningOperations)
             {
                 [self.runningOperations removeObject:operation];
@@ -260,6 +289,11 @@
 - (void)cancel
 {
     self.cancelled = YES;
+    if (self.cacheOperation)
+    {
+        [self.cacheOperation cancel];
+        self.cacheOperation = nil;
+    }
     if (self.cancelBlock)
     {
         self.cancelBlock();
