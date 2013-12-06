@@ -63,11 +63,25 @@ typedef void(^SDWebImageDownloaderCompletedBlock)(UIImage *image, NSData *data, 
 @property (assign, nonatomic) NSInteger maxConcurrentDownloads;
 
 /**
+ * Shows the current amount of downloads that still need to be downloaded
+ */
+
+@property (readonly, nonatomic) NSUInteger currentDownloadCount;
+
+/**
  * Changes download operations execution order. Default value is `SDWebImageDownloaderFIFOExecutionOrder`.
  */
 @property (assign, nonatomic) SDWebImageDownloaderExecutionOrder executionOrder;
 
 + (SDWebImageDownloader *)sharedDownloader;
+
+/**
+ * Set filter to pick headers for downloading image HTTP request.
+ *
+ * This block will be invoked for each downloading image request, returned
+ * NSDictionary will be used as headers in corresponding HTTP request.
+ */
+@property (nonatomic, strong) NSDictionary *(^headersFilter)(NSURL *url, NSDictionary *headers);
 
 /**
  * Set a value for a HTTP header to be appended to each download HTTP request.
