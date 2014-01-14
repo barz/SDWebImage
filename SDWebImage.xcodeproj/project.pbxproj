@@ -189,6 +189,7 @@
 		53EDFD0417625F7900698166 /* thread.c in Sources */ = {isa = PBXBuildFile; fileRef = 53EDFD0017625F7900698166 /* thread.c */; };
 		5DA509F4187B68E7002FEB5C /* random.c in Sources */ = {isa = PBXBuildFile; fileRef = 5DA509F2187B68E7002FEB5C /* random.c */; };
 		5DA509F5187B68E7002FEB5C /* random.h in Headers */ = {isa = PBXBuildFile; fileRef = 5DA509F3187B68E7002FEB5C /* random.h */; };
+		7962C7211885A4710054D1E8 /* SDWebImageCompat.m in Sources */ = {isa = PBXBuildFile; fileRef = 5340674F167780C40042B59E /* SDWebImageCompat.m */; };
 		A18A6CC7172DC28500419892 /* UIImage+GIF.h in Headers */ = {isa = PBXBuildFile; fileRef = A18A6CC5172DC28500419892 /* UIImage+GIF.h */; };
 		A18A6CC8172DC28500419892 /* UIImage+GIF.h in Headers */ = {isa = PBXBuildFile; fileRef = A18A6CC5172DC28500419892 /* UIImage+GIF.h */; };
 		A18A6CC9172DC28500419892 /* UIImage+GIF.m in Sources */ = {isa = PBXBuildFile; fileRef = A18A6CC6172DC28500419892 /* UIImage+GIF.m */; };
@@ -723,6 +724,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7962C7211885A4710054D1E8 /* SDWebImageCompat.m in Sources */,
 				531041C4157EAFA400BBABC3 /* SDImageCache.m in Sources */,
 				531041C5157EAFA400BBABC3 /* SDWebImageDecoder.m in Sources */,
 				531041C6157EAFA400BBABC3 /* SDWebImageDownloader.m in Sources */,
