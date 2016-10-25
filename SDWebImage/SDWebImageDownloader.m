@@ -142,7 +142,15 @@
 - (nullable SDWebImageDownloadToken *)downloadImageWithURL:(nullable NSURL *)url
                                                    options:(SDWebImageDownloaderOptions)options
                                                   progress:(nullable SDWebImageDownloaderProgressBlock)progressBlock
-                                                 completed:(nullable SDWebImageDownloaderCompletedBlock)completedBlock {
+                                                 completed:(nullable SDWebImageDownloaderCompletedBlock)completedBlock
+{
+    if (options == 0)
+    {
+        // Joel -> Oct 25 2016
+        // Be sure that when the options is the default be always use option: SDWebImageDownloaderScaleDownLargeImages to avoid memory pressure.
+        options = SDWebImageDownloaderScaleDownLargeImages;
+    }
+    
     __weak SDWebImageDownloader *wself = self;
 
     return [self addProgressCallback:progressBlock completedBlock:completedBlock forURL:url createCallback:^SDWebImageDownloaderOperation *{

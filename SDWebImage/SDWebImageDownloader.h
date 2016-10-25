@@ -9,6 +9,7 @@
 #import <Foundation/Foundation.h>
 #import "SDWebImageCompat.h"
 #import "SDWebImageOperation.h"
+#import "SDImageCache.h"
 
 typedef NS_OPTIONS(NSUInteger, SDWebImageDownloaderOptions) {
     SDWebImageDownloaderLowPriority = 1 << 0,
@@ -70,6 +71,8 @@ typedef NS_ENUM(NSInteger, SDWebImageDownloaderExecutionOrder) {
 
 extern NSString * _Nonnull const SDWebImageDownloadStartNotification;
 extern NSString * _Nonnull const SDWebImageDownloadStopNotification;
+
+//typedef void(^SDWebImageCompletedBlock)(UIImage * _Nullable image, NSError * _Nullable error, SDImageCacheType cacheType);
 
 typedef void(^SDWebImageDownloaderProgressBlock)(NSInteger receivedSize, NSInteger expectedSize, NSURL * _Nullable targetURL);
 
@@ -212,6 +215,8 @@ typedef SDHTTPHeadersDictionary * _Nullable (^SDWebImageDownloaderHeadersFilterB
                                                    options:(SDWebImageDownloaderOptions)options
                                                   progress:(nullable SDWebImageDownloaderProgressBlock)progressBlock
                                                  completed:(nullable SDWebImageDownloaderCompletedBlock)completedBlock;
+
+
 
 /**
  * Cancels a download that was previously queued using -downloadImageWithURL:options:progress:completed:
