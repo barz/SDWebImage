@@ -1,16 +1,21 @@
-//
-//  DetailViewController.m
-//  SDWebImage Demo
-//
-//  Created by Olivier Poitrey on 09/05/12.
-//  Copyright (c) 2012 Dailymotion. All rights reserved.
-//
+/*
+ * This file is part of the SDWebImage package.
+ * (c) Olivier Poitrey <rs@dailymotion.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 #import "DetailViewController.h"
 #import <SDWebImage/UIImageView+WebCache.h>
+#import <SDWebImage/FLAnimatedImageView+WebCache.h>
 
 @interface DetailViewController ()
+
+@property (strong, nonatomic) IBOutlet FLAnimatedImageView *imageView;
+
 - (void)configureView;
+
 @end
 
 @implementation DetailViewController
@@ -31,24 +36,23 @@
 
 - (void)configureView
 {
-    if (self.imageURL)
-    {
+    if (self.imageURL) {
         __block UIActivityIndicatorView *activityIndicator;
         __weak UIImageView *weakImageView = self.imageView;
-        [self.imageView setImageWithURL:self.imageURL placeholderImage:nil options:SDWebImageProgressiveDownload progress:^(NSInteger receivedSize, NSInteger expectedSize)
-        {
-            if (!activityIndicator)
-            {
-                [weakImageView addSubview:activityIndicator = [UIActivityIndicatorView.alloc initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray]];
-                activityIndicator.center = weakImageView.center;
-                [activityIndicator startAnimating];
-            }
-        }
-        completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType)
-        {
-            [activityIndicator removeFromSuperview];
-            activityIndicator = nil;
-        }];
+        [self.imageView sd_setImageWithURL:self.imageURL
+                          placeholderImage:nil
+                                   options:SDWebImageProgressiveDownload
+                                  progress:^(NSInteger receivedSize, NSInteger expectedSize, NSURL *targetURL) {
+                                      if (!activityIndicator) {
+                                          [weakImageView addSubview:activityIndicator = [UIActivityIndicatorView.alloc initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray]];
+                                          activityIndicator.center = weakImageView.center;
+                                          [activityIndicator startAnimating];
+                                      }
+                                  }
+                                 completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {
+                                     [activityIndicator removeFromSuperview];
+                                     activityIndicator = nil;
+                                 }];
     }
 }
 
