@@ -47,6 +47,8 @@
  */
 @interface UIImageView (WebCache)
 
+-(void)cancelDownloadOperation;
+
 /**
  * Set the imageView `image` with an `url`.
  *

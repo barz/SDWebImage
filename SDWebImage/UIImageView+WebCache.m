@@ -16,6 +16,11 @@
 
 @implementation UIImageView (WebCache)
 
+-(void)cancelDownloadOperation
+{
+    [self sd_cancelCurrentImageLoad];
+}
+
 - (void)sd_setImageWithURL:(nullable NSURL *)url {
     [self sd_setImageWithURL:url placeholderImage:nil options:0 progress:nil completed:nil];
 }
@@ -63,6 +68,11 @@
     UIImage *lastPreviousCachedImage = [[SDImageCache sharedImageCache] imageFromCacheForKey:key];
     
     [self sd_setImageWithURL:url placeholderImage:lastPreviousCachedImage ?: placeholder options:options progress:progressBlock completed:completedBlock];    
+}
+
+-(void)dealloc
+{
+    //NSLog(@"UIImageView dealloc");
 }
 
 #if SD_UIKIT
