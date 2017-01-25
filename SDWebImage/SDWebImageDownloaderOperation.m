@@ -442,7 +442,13 @@ didReceiveResponse:(NSURLResponse *)response
                             image = [UIImage decodedImageWithImage:image];
                         }
                     }
+                    else  if (self.options & SDWebImageDownloaderScaleDownLargeImages)
+                    {
+                        image = [UIImage decodedAndScaledDownImageWithImage:image];
+                        [self.imageData setData:UIImagePNGRepresentation(image)];
+                    }
                 }
+                
                 if (CGSizeEqualToSize(image.size, CGSizeZero)) {
                     [self callCompletionBlocksWithError:[NSError errorWithDomain:SDWebImageErrorDomain code:0 userInfo:@{NSLocalizedDescriptionKey : @"Downloaded image has 0 pixels"}]];
                 } else {
